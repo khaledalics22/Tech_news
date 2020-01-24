@@ -40,4 +40,8 @@
         <item>@string/pref_order_by_relevance_value</item>
     </string-array>
 
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="culnews">Culture News</string>
+
 </resources>
