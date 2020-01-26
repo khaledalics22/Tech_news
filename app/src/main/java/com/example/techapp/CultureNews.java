@@ -1,6 +1,7 @@
 package com.example.techapp;
 
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -39,6 +40,7 @@ public class CultureNews extends Fragment implements LoaderManager.LoaderCallbac
         // Required empty public constructor
     }
 
+    private int pageNum = 1;
     private Toast toast;
     private TextView tvCurrentState;
     private ProgressBar progressBarMain;
@@ -48,20 +50,21 @@ public class CultureNews extends Fragment implements LoaderManager.LoaderCallbac
     private RecyclerView.LayoutManager layoutManager;
     private ReportsAdapter adapter;
     private List<TechReportClass> cul_reports = null;
-    private ProgressBar progressBar;
+    private ProgressBar loadMoreProg;
     private final int CUL_LOADER = 1;
     private final int LOAD_PROGRESS = 1;
     private final int NO_RESULTS = 2;
     private final int NO_CONNECTION = 3;
     private final int SHOW_LIST = 4;
     private final int TRY_AGAIN = 5;
-    private  SwipeRefreshLayout pullRefresh;
+    private boolean loading = false;
+    private SwipeRefreshLayout pullRefresh;
 
-    private void setStatus(int status) {
-        switch (status) {
-            case NO_CONNECTION:
 
-        }
+    private void loadMore() {
+        pageNum++;
+        buildUrl(cul_url);
+        getActivity().getSupportLoaderManager().restartLoader(CUL_LOADER, null, this);
     }
 
     @Override
@@ -74,16 +77,32 @@ public class CultureNews extends Fragment implements LoaderManager.LoaderCallbac
         recyclerView.setHasFixedSize(true);
         adapter = new ReportsAdapter(getContext(), new ArrayList<TechReportClass>());
         recyclerView.setAdapter(adapter);
+        loadMoreProg = view.findViewById(R.id.load_more);
         tvCurrentState = view.findViewById(R.id.tv_no_connection);
         progressBarMain = view.findViewById(R.id.progress_circular);
         cuuStatusLayout = view.findViewById(R.id.no_connection_layout);
-         pullRefresh = view.findViewById(R.id.swip_refresh);
+        pullRefresh = view.findViewById(R.id.swip_refresh);
         pullRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                refresh();
-               pullRefresh.setRefreshing(false);
+                if (!loading) {
+                    pageNum = 1;
+                    buildUrl(cul_url);
+                    refresh();
+                }
+                pullRefresh.setRefreshing(false);
 
+            }
+        });
+        recyclerView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+                if (!loading && !recyclerView.canScrollVertically(View.FOCUS_DOWN)) {
+                    loadMoreProg.setVisibility(View.VISIBLE);
+                    loading = true;
+                    loadMore();
+                }
             }
         });
         Button btnTryAgain = view.findViewById(R.id.btr_try_again);
@@ -173,14 +192,22 @@ public class CultureNews extends Fragment implements LoaderManager.LoaderCallbac
 
     private void updateUI(List<TechReportClass> data) {
         if (data == null || data.size() == 0) {
-            showResponseStatus(NO_RESULTS);
+            if (loading) {
+      //          makeToast(getString(R.string.noMoreReports));
+            } else
+                showResponseStatus(NO_RESULTS);
         } else {
-            makeToast(getString(R.string.Load_Done));
-            adapter.clear();
+    //            makeToast(getString(R.string.Load_Done));
+            if (!loading) {
+                adapter.clear();
+            } else {
+                loadMoreProg.setVisibility(View.GONE);
+            }
             adapter.addAll((ArrayList<TechReportClass>) data);
             adapter.notifyDataSetChanged();
             showResponseStatus(SHOW_LIST);
         }
+        loading = false;
     }
 
     private void makeToast(String message) {
@@ -190,6 +217,11 @@ public class CultureNews extends Fragment implements LoaderManager.LoaderCallbac
         toast = Toast.makeText(getContext(), message, Toast.LENGTH_SHORT);
         toast.setText(message);
         toast.show();
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
     }
 
     @Override
@@ -213,10 +245,9 @@ public class CultureNews extends Fragment implements LoaderManager.LoaderCallbac
         Uri.Builder builder = uriBase.buildUpon();
         builder.appendQueryParameter("section", "culture")
                 .appendQueryParameter("order-by", orderBy)
-                .appendQueryParameter("page", String.valueOf(1))
+                .appendQueryParameter("page", String.valueOf(pageNum))
                 .appendQueryParameter("show-fields", "thumbnail")
                 .appendQueryParameter("show-tags", "contributor")
-                .appendQueryParameter("q", "egypt")
                 .appendQueryParameter("api-key", "eda90898-9281-4d8c-a6c0-d868cac47caa");
         return builder.build().toString();
     }

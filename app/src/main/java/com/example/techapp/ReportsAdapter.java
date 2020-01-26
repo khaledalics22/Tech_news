@@ -26,7 +26,7 @@ public class ReportsAdapter extends RecyclerView.Adapter<ReportsAdapter.ViewHold
     public ReportsAdapter(Context context, ArrayList<TechReportClass> reports) {
         this.reports = reports;
         this.context = context;
-      //  itemClickInterface = (onItemClickInterface) context;
+          itemClickInterface = (onItemClickInterface) context;
     }
 
     public void addAll(ArrayList<TechReportClass> data) {
@@ -45,7 +45,7 @@ public class ReportsAdapter extends RecyclerView.Adapter<ReportsAdapter.ViewHold
     }
 
     public interface onItemClickInterface {
-       // void onItemClickListener(TechReportClass currReport);
+         void onItemClickListener(TechReportClass currReport);
     }
 
     @NonNull
@@ -71,7 +71,7 @@ public class ReportsAdapter extends RecyclerView.Adapter<ReportsAdapter.ViewHold
 
         @Override
         public void onClick(View v) {
-           // itemClickInterface.onItemClickListener(reports.get(getAdapterPosition()));
+            itemClickInterface.onItemClickListener(reports.get(getAdapterPosition()));
         }
 
         public ViewHolderClass(@NonNull View itemView) {
@@ -90,7 +90,10 @@ public class ReportsAdapter extends RecyclerView.Adapter<ReportsAdapter.ViewHold
             final TechReportClass current = reports.get(index);
             title.setText(current.getmWebTitle());
             type.setText(context.getResources().getString(R.string.type, current.getmType()));
-            image.setImageBitmap(current.getImage());
+            if (current.getImage() == null)
+                image.setVisibility(View.GONE);
+            else
+                image.setImageBitmap(current.getImage());
             section.setText(context.getResources().getString(R.string.section, current.getmSection()));
             String authorNames = current.getAuthorName();
             if (authorNames != null && !authorNames.matches("")) {
@@ -117,7 +120,7 @@ public class ReportsAdapter extends RecyclerView.Adapter<ReportsAdapter.ViewHold
                                             .setPositiveButton(context.getString(R.string.open_page), new DialogInterface.OnClickListener() {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
-                                                //    itemClickInterface.onItemClickListener(current);
+                                                       itemClickInterface.onItemClickListener(current);
                                                 }
                                             }).setNegativeButton(context.getString(R.string.cancel), new DialogInterface.OnClickListener() {
                                         @Override

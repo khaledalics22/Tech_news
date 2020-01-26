@@ -45,7 +45,10 @@ public class QueryUtils {
         }
         return urlObj;
     }
-    /** parse jsonString response into JSON objects and store data in list of reports*/
+
+    /**
+     * parse jsonString response into JSON objects and store data in list of reports
+     */
     public static List<TechReportClass> extractFeatures(Context context, String jsonString) throws IOException {
         if (jsonString == null) return null;
         List<TechReportClass> list = new ArrayList<>();
@@ -55,14 +58,14 @@ public class QueryUtils {
             pageCount = response.getLong("pages");
             JSONArray results = response.getJSONArray("results");
             for (int i = 0; i < results.length(); i++) {
-                Bitmap image ;
+                Bitmap image;
                 JSONObject element = results.getJSONObject(i);
                 JSONObject fields = element.optJSONObject("fields");
                 if (fields != null) {
                     String imUrl = fields.getString("thumbnail");
                     image = extractImage(imUrl);
                 } else {
-                    image = BitmapFactory.decodeResource(context.getResources(), R.drawable.no_image_png_935205);
+                    image = null;
                 }
                 JSONArray tag = element.optJSONArray("tags");
                 String authors = null;
@@ -87,10 +90,12 @@ public class QueryUtils {
         return list;
     }
 
-    /** fetch image of certain report using thumbnail url */
+    /**
+     * fetch image of certain report using thumbnail url
+     */
     public static Bitmap extractImage(String urlString) throws IOException {
-        HttpURLConnection urlConnection ;
-        InputStream inputStream ;
+        HttpURLConnection urlConnection;
+        InputStream inputStream;
         Bitmap image = null;
         URL url = createUrl(urlString);
         if (url != null) {
@@ -99,7 +104,7 @@ public class QueryUtils {
             urlConnection.setRequestMethod("GET");
             urlConnection.setConnectTimeout(10000);
             urlConnection.connect();
-            if (urlConnection.getResponseCode() == 200 /* status is ok */ ) {
+            if (urlConnection.getResponseCode() == 200 /* status is ok */) {
                 inputStream = urlConnection.getInputStream();
                 image = BitmapFactory.decodeStream(inputStream);
                 inputStream.close();
@@ -109,52 +114,32 @@ public class QueryUtils {
         return image;
     }
 
-    public static String changePage(String url , int current)
-    {
-        if(current==5/* load if max 20 page */)
-            return null;
-        String [] splitter= url.split("page=",2);
-        String [] split2 = splitter[1].split("&",2);
-        url=splitter[0]+"page="+current+"&"+split2[1];
-        return url ;
-    }
-
-    /** fetches all data of an url */
+    /**
+     * fetches all data of an url
+     */
     public static List<TechReportClass> makeHttpConnection(Context context, String urlString) throws IOException {
-        List<TechReportClass> list= new ArrayList<>();
-        for (int i =1 ; i<=pageCount;i ++) {
-            // keep fetching if find pages
-
-            InputStream inputStream = null;
-            HttpURLConnection urlConnection = null;
-            String response = null;
-            URL url = createUrl(urlString);
-            try {
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setReadTimeout(10000);
-                urlConnection.setConnectTimeout(15000);
-                urlConnection.connect();
-                if (urlConnection.getResponseCode() == 200 /* status is ok */) {
-                    inputStream = urlConnection.getInputStream();
-                    response = getResponseString(inputStream);
-                }
-            } catch (SecurityException e) {
-                e.printStackTrace();
-            } finally {
-                if (inputStream != null)
-                    inputStream.close();
-                if (urlConnection != null)
-                    urlConnection.disconnect();
+        InputStream inputStream = null;
+        HttpURLConnection urlConnection = null;
+        String response = null;
+        URL url = createUrl(urlString);
+        try {
+            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setReadTimeout(10000);
+            urlConnection.setConnectTimeout(15000);
+            urlConnection.connect();
+            if (urlConnection.getResponseCode() == 200 /* status is ok */) {
+                inputStream = urlConnection.getInputStream();
+                response = getResponseString(inputStream);
             }
-            List<TechReportClass> temp = extractFeatures(context, response);
-            if(temp!=null){
-                list.addAll(temp);
-                urlString = changePage(urlString,i);
-                if(urlString==null /* 5 pages are loaded */ ) break;}
-            else break;
-
+        } catch (SecurityException e) {
+            e.printStackTrace();
+        } finally {
+            if (inputStream != null)
+                inputStream.close();
+            if (urlConnection != null)
+                urlConnection.disconnect();
         }
-        return list;
+        return extractFeatures(context, response);
     }
 
     public static String getResponseString(InputStream inputStream) {
